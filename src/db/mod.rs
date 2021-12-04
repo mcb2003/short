@@ -4,8 +4,8 @@ use schema::links;
 use std::time::SystemTime;
 
 use async_std::task;
-use diesel::prelude::*;
 use deadpool_diesel::postgres::{Manager, Pool, Runtime};
+use diesel::prelude::*;
 use once_cell::sync::Lazy;
 use uuid::Uuid;
 
@@ -39,6 +39,30 @@ impl Link {
         task::spawn_blocking(move || {
             let conn = conn.lock().unwrap();
             Ok(links.load(&*conn)?)
-        }).await
+        })
+        .await
+    }
+}
+
+#[derive(Default, Insertable)]
+#[table_name = "links"]
+pub struct NewLink {
+    pub slug: Option<String>,
+    pub uri: String,
+    pub description: String,
+}
+
+impl NewLink {
+    pub async fn save(self) -> anyhow::Result<Link> {
+        use schema::links::dsl::*;
+
+        let conn = DB_POOL.get().await?;
+        // Kinda annoying, this closure must be 'static, so we have to allocate and copy, even
+        // though it's awaited straight away. Scoped tasks would be nice!
+        task::spawn_blocking(move || {
+            let conn = conn.lock().unwrap();
+            Ok(diesel::insert_into(links).values(self).get_result(&*conn)?)
+        })
+        .await
     }
 }
