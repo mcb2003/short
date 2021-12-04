@@ -1,5 +1,5 @@
 [package]
-name = "shoot"
+name = "short"
 version = "0.1.0"
 authors = ["MichaelConnor Buchan <mikey@blindcomputing.org>"]
 description = "A link aggregator, organiser and shortener"
