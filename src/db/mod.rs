@@ -49,7 +49,7 @@ impl Link {
         let conn = DB_POOL.get().await?;
         task::spawn_blocking(move || {
             let conn = conn.lock().unwrap();
-            Ok(links.filter(id.eq(uuid)).load(&*conn).map(|mut v| v.pop())?)
+            Ok(links.find(uuid).load(&*conn).map(|v| v.into_iter().next())?)
         })
         .await
     }
