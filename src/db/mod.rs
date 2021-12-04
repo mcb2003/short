@@ -21,7 +21,7 @@ pub static DB_POOL: Lazy<Pool> = Lazy::new(|| {
 });
 
 #[allow(dead_code)]
-#[derive(Queryable, Identifiable)]
+#[derive(Queryable, Identifiable, serde::Serialize)]
 pub struct Link {
     id: Uuid,
     slug: Option<String>,
@@ -44,7 +44,7 @@ impl Link {
     }
 }
 
-#[derive(Default, Insertable)]
+#[derive(Default, Insertable, serde::Deserialize)]
 #[table_name = "links"]
 pub struct NewLink {
     pub slug: Option<String>,
