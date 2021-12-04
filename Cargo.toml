@@ -1,0 +1,9 @@
+[package]
+name = "shoot"
+version = "0.1.0"
+authors = ["MichaelConnor Buchan <mikey@blindcomputing.org>"]
+description = "A link aggregator, organiser and shortener"
+license = "agpl-3-or-later"
+edition = "2021"
+
+[dependencies]
