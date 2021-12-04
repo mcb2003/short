@@ -42,6 +42,17 @@ impl Link {
         })
         .await
     }
+
+    pub async fn by_id(uuid: Uuid) -> anyhow::Result<Option<Self>> {
+        use schema::links::dsl::*;
+
+        let conn = DB_POOL.get().await?;
+        task::spawn_blocking(move || {
+            let conn = conn.lock().unwrap();
+            Ok(links.filter(id.eq(uuid)).load(&*conn).map(|mut v| v.pop())?)
+        })
+        .await
+    }
 }
 
 #[derive(Default, Insertable, serde::Deserialize)]
