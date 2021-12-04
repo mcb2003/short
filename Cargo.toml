@@ -17,6 +17,7 @@ diesel = { version = "1.4.8", features = ["postgres", "uuidv07"] }
 dotenv = "0.15.0"
 once_cell = "1.8.0"
 serde = { version = "1.0.130", features = ["derive"] }
+tide = "0.16.0"
 uuid = { version = "0.8.2", features = ["serde", "v4"] }
 
 [features]
