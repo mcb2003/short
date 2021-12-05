@@ -1,9 +1,8 @@
 mod schema;
 use schema::links;
 
-use std::time::SystemTime;
-
 use async_std::task;
+use chrono::NaiveDateTime;
 use deadpool_diesel::postgres::{Manager, Pool, Runtime};
 use diesel::prelude::*;
 use once_cell::sync::Lazy;
@@ -29,8 +28,8 @@ pub struct Link {
     description: String,
     #[serde(skip_serializing)]
     deleted: bool,
-    created_at: SystemTime,
-    updated_at: SystemTime,
+    created_at: NaiveDateTime,
+    updated_at: NaiveDateTime,
 }
 
 impl Link {
