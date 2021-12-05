@@ -2,7 +2,7 @@ mod schema;
 use schema::links;
 
 use async_std::task;
-use chrono::NaiveDateTime;
+use chrono::{DateTime, NaiveDateTime, Utc};
 use deadpool_diesel::postgres::{Manager, Pool, Runtime};
 use diesel::prelude::*;
 use once_cell::sync::Lazy;
@@ -85,6 +85,10 @@ impl Link {
 
     pub fn uri(&self) -> &str {
         &self.uri
+    }
+
+    pub fn updated_at(&self) -> DateTime<Utc> {
+        DateTime::from_utc(self.updated_at, Utc)
     }
 }
 

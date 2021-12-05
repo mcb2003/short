@@ -30,7 +30,7 @@ async fn view_link(req: Request<()>) -> tide::Result {
     Ok(if let Some(link) = Link::by_id(id).await? {
         if !link.deleted() {
         let body = Body::from_json(&link)?;
-        Response::builder(StatusCode::Ok).body(body).build()
+        Response::builder(StatusCode::Ok).header("Last-Modified", link.updated_at().to_rfc2822()).body(body).build()
         } else {
             Response::new(StatusCode::Gone)
         }
