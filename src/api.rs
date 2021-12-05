@@ -43,10 +43,7 @@ async fn update_link(mut req: Request<()>) -> tide::Result {
     let id: Uuid = req.param("id").unwrap().parse().map_err(|e| Error::new(StatusCode::BadRequest, e))?;
     let last_modified = if let Some(date) = req.header("If-Unmodified-Since") {
         let date = date.last();
-        chrono::DateTime::parse_from_rfc2822(date.as_str()).map_err(|_| {
-            eprintln!("Invalid date: {}", date.as_str());
-Error::from_str(StatusCode::BadRequest, "Invalid date in If-Unmodified-Since header")
-        })?.naive_utc()
+        chrono::DateTime::parse_from_rfc2822(date.as_str()).map_err(|_| Error::from_str(StatusCode::BadRequest, "Invalid date in If-Unmodified-Since header"))?.naive_utc()
     } else {
         return Err(Error::from_str(StatusCode::PreconditionRequired, "Must provide an If-Unmodified-Since header"));
     };
@@ -68,10 +65,22 @@ Error::from_str(StatusCode::BadRequest, "Invalid date in If-Unmodified-Since hea
 
 async fn delete_link(req: Request<()>) -> tide::Result {
     let id: Uuid = req.param("id").unwrap().parse().map_err(|e| Error::new(StatusCode::BadRequest, e))?;
-    let num_deleted = Link::delete_by_id(id).await?;
-    Ok(Response::new(if num_deleted == 0 {
-        StatusCode::NotFound
+    if !Link::id_exists(id).await? {
+        return Ok(Response::new(StatusCode::NotFound));
+    }
+
+    let last_modified = if let Some(date) = req.header("If-Unmodified-Since") {
+        let date = date.last();
+        chrono::DateTime::parse_from_rfc2822(date.as_str()).map_err(|_| Error::from_str(StatusCode::BadRequest, "Invalid date in If-Unmodified-Since header"))?.naive_utc()
     } else {
-        StatusCode::NoContent
-    }))
+        return Err(Error::from_str(StatusCode::PreconditionRequired, "Must provide an If-Unmodified-Since header"));
+    };
+
+    Ok(if Link::delete_if(id, last_modified).await? {
+        // Link hasn't been modified since last_modified
+    Response::new(StatusCode::NoContent)
+    } else {
+        // Link was modified, client will have to refetch and try again
+        Response::new(StatusCode::PreconditionFailed)
+    })
     }

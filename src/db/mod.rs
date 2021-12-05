@@ -68,16 +68,30 @@ impl Link {
         .await
     }
 
-    pub async fn delete_by_id(uuid: Uuid) -> anyhow::Result<usize> {
+    pub async fn delete_if(uuid: Uuid, last_modified: NaiveDateTime) -> anyhow::Result<bool> {
         use schema::links::dsl::*;
 
         let conn = DB_POOL.get().await?;
         task::spawn_blocking(move || {
             let conn = conn.lock().unwrap();
-            Ok(diesel::update(links.find(uuid)).set(deleted.eq(true)).execute(&*conn)?)
+            let num_deleted = diesel::update(links.filter(updated_at.le(last_modified)).find(uuid)).set(deleted.eq(true)).execute(&*conn)?;
+            Ok(num_deleted > 0)
         })
         .await
     }
+
+pub async fn id_exists(uuid: Uuid) -> anyhow::Result<bool> {
+    use diesel::dsl::count_star;
+        use schema::links::dsl::*;
+
+        let conn = DB_POOL.get().await?;
+        task::spawn_blocking(move || {
+            let conn = conn.lock().unwrap();
+            let num_results: i64 = links.select(count_star()).find(uuid).first(&*conn)?;
+            Ok(num_results > 0)
+        })
+        .await
+}
 
 pub async fn is_id_deleted(uuid: Uuid) -> anyhow::Result<bool> {
         use schema::links::dsl::*;
