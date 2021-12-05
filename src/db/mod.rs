@@ -28,7 +28,9 @@ pub struct Link {
     description: String,
     #[serde(skip_serializing)]
     deleted: bool,
+    #[serde(serialize_with = "crate::serialize_datetime_utc")]
     created_at: NaiveDateTime,
+    #[serde(serialize_with = "crate::serialize_datetime_utc")]
     updated_at: NaiveDateTime,
 }
 
