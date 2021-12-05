@@ -5,6 +5,8 @@ CREATE TABLE links (
     uri TEXT NOT NULL UNIQUE,
     description TEXT NOT NULL DEFAULT '',
 
+    deleted BOOL NOT NULL DEFAULT false,
+
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );

@@ -27,6 +27,8 @@ pub struct Link {
     slug: Option<String>,
     uri: String,
     description: String,
+    #[serde(skip_serializing)]
+    deleted: bool,
     created_at: SystemTime,
     updated_at: SystemTime,
 }
@@ -38,7 +40,7 @@ impl Link {
         let conn = DB_POOL.get().await?;
         task::spawn_blocking(move || {
             let conn = conn.lock().unwrap();
-            Ok(links.load(&*conn)?)
+            Ok(links.filter(deleted.eq(false)).load(&*conn)?)
         })
         .await
     }
@@ -52,6 +54,21 @@ impl Link {
             Ok(links.find(uuid).load(&*conn).map(|v| v.into_iter().next())?)
         })
         .await
+    }
+
+    pub async fn delete_by_id(uuid: Uuid) -> anyhow::Result<usize> {
+        use schema::links::dsl::*;
+
+        let conn = DB_POOL.get().await?;
+        task::spawn_blocking(move || {
+            let conn = conn.lock().unwrap();
+            Ok(diesel::update(links.find(uuid)).set(deleted.eq(true)).execute(&*conn)?)
+        })
+        .await
+    }
+
+    pub fn deleted(&self) -> bool {
+        self.deleted
     }
 }
 
