@@ -7,7 +7,7 @@ pub fn install() -> tide::Server<()> {
     let mut app = tide::new();
         
 app.at("/links").get(all_links).post(new_link);
-app.at("/links/:id").get(view_link).delete(delete_link);
+app.at("/links/:id").get(view_link).put(update_link).delete(delete_link);
 
         app
 }
@@ -36,6 +36,33 @@ async fn view_link(req: Request<()>) -> tide::Result {
         }
     } else {
         Response::new(StatusCode::NotFound)
+    })
+}
+
+async fn update_link(mut req: Request<()>) -> tide::Result {
+    let id: Uuid = req.param("id").unwrap().parse().map_err(|e| Error::new(StatusCode::BadRequest, e))?;
+    let last_modified = if let Some(date) = req.header("If-Unmodified-Since") {
+        let date = date.last();
+        chrono::DateTime::parse_from_rfc2822(date.as_str()).map_err(|_| {
+            eprintln!("Invalid date: {}", date.as_str());
+Error::from_str(StatusCode::BadRequest, "Invalid date in If-Unmodified-Since header")
+        })?.naive_utc()
+    } else {
+        return Err(Error::from_str(StatusCode::PreconditionRequired, "Must provide an If-Unmodified-Since header"));
+    };
+    let update: LinkUpdate = if !Link::is_id_deleted(id).await? {
+     req.body_json().await.map_err(|_| Error::from_str(StatusCode::BadRequest, "Invalid JSON payload"))?
+    } else {
+        // Link was deleted
+        return Ok(Response::new(StatusCode::Gone));
+    };
+    Ok(if let Some(new) = update.update_if(id, last_modified).await? {
+        // Link hasn't been modified since last_modified
+    let body = Body::from_json(&new)?;
+    Response::builder(StatusCode::Ok).body(body).header("Last-Modified", new.updated_at().to_rfc2822()).build()
+    } else {
+        // Link was modified, client will have to refetch and try again
+        Response::new(StatusCode::PreconditionFailed)
     })
 }
 

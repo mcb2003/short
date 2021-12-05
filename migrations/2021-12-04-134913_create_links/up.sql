@@ -12,3 +12,4 @@ CREATE TABLE links (
 );
 
 CREATE INDEX links_by_slug ON links(slug);
+SELECT diesel_manage_updated_at('links');
