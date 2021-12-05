@@ -52,7 +52,10 @@ impl Link {
         let conn = DB_POOL.get().await?;
         task::spawn_blocking(move || {
             let conn = conn.lock().unwrap();
-            Ok(links.find(uuid).load(&*conn).map(|v| v.into_iter().next())?)
+            Ok(links
+                .find(uuid)
+                .load(&*conn)
+                .map(|v| v.into_iter().next())?)
         })
         .await
     }
@@ -63,7 +66,10 @@ impl Link {
         let conn = DB_POOL.get().await?;
         task::spawn_blocking(move || {
             let conn = conn.lock().unwrap();
-            Ok(links.filter(slug.eq(link_slug)).load(&*conn).map(|v| v.into_iter().next())?)
+            Ok(links
+                .filter(slug.eq(link_slug))
+                .load(&*conn)
+                .map(|v| v.into_iter().next())?)
         })
         .await
     }
@@ -74,14 +80,16 @@ impl Link {
         let conn = DB_POOL.get().await?;
         task::spawn_blocking(move || {
             let conn = conn.lock().unwrap();
-            let num_deleted = diesel::update(links.filter(updated_at.le(last_modified)).find(uuid)).set(deleted.eq(true)).execute(&*conn)?;
+            let num_deleted = diesel::update(links.filter(updated_at.le(last_modified)).find(uuid))
+                .set(deleted.eq(true))
+                .execute(&*conn)?;
             Ok(num_deleted > 0)
         })
         .await
     }
 
-pub async fn id_exists(uuid: Uuid) -> anyhow::Result<bool> {
-    use diesel::dsl::count_star;
+    pub async fn id_exists(uuid: Uuid) -> anyhow::Result<bool> {
+        use diesel::dsl::count_star;
         use schema::links::dsl::*;
 
         let conn = DB_POOL.get().await?;
@@ -91,9 +99,9 @@ pub async fn id_exists(uuid: Uuid) -> anyhow::Result<bool> {
             Ok(num_results > 0)
         })
         .await
-}
+    }
 
-pub async fn is_id_deleted(uuid: Uuid) -> anyhow::Result<bool> {
+    pub async fn is_id_deleted(uuid: Uuid) -> anyhow::Result<bool> {
         use schema::links::dsl::*;
 
         let conn = DB_POOL.get().await?;
@@ -102,7 +110,7 @@ pub async fn is_id_deleted(uuid: Uuid) -> anyhow::Result<bool> {
             Ok(links.select(deleted).find(uuid).get_result(&*conn)?)
         })
         .await
-}
+    }
 
     pub fn deleted(&self) -> bool {
         self.deleted
@@ -149,13 +157,22 @@ pub struct LinkUpdate {
 }
 
 impl LinkUpdate {
-    pub async fn update_if(self, uuid: Uuid, last_modified: NaiveDateTime) -> anyhow::Result<Option<Link>> {
+    pub async fn update_if(
+        self,
+        uuid: Uuid,
+        last_modified: NaiveDateTime,
+    ) -> anyhow::Result<Option<Link>> {
         use schema::links::dsl::*;
 
         let conn = DB_POOL.get().await?;
         task::spawn_blocking(move || {
             let conn = conn.lock().unwrap();
-            Ok(diesel::update(links).set(self).filter(id.eq(uuid)).filter(updated_at.le(last_modified)).get_results(&*conn).map(|v| v.into_iter().next())?)
+            Ok(diesel::update(links)
+                .set(self)
+                .filter(id.eq(uuid))
+                .filter(updated_at.le(last_modified))
+                .get_results(&*conn)
+                .map(|v| v.into_iter().next())?)
         })
         .await
     }
