@@ -57,6 +57,17 @@ impl Link {
         .await
     }
 
+    pub async fn by_slug(link_slug: String) -> anyhow::Result<Option<Self>> {
+        use schema::links::dsl::*;
+
+        let conn = DB_POOL.get().await?;
+        task::spawn_blocking(move || {
+            let conn = conn.lock().unwrap();
+            Ok(links.filter(slug.eq(link_slug)).load(&*conn).map(|v| v.into_iter().next())?)
+        })
+        .await
+    }
+
     pub async fn delete_by_id(uuid: Uuid) -> anyhow::Result<usize> {
         use schema::links::dsl::*;
 
@@ -70,6 +81,10 @@ impl Link {
 
     pub fn deleted(&self) -> bool {
         self.deleted
+    }
+
+    pub fn uri(&self) -> &str {
+        &self.uri
     }
 }
 
